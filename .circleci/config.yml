@@ -36,6 +36,10 @@ jobs:
           command: |
             cd serverless
             make build
+      - persist_to_workspace:
+          root: ~/gin-rating-api
+          paths:
+            - serverless/bin
 
   test:
     docker:
@@ -71,11 +75,14 @@ jobs:
     working_directory: ~/gin-rating-api
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/gin-rating-api
       - run:
           name: Install Serverless CLI
           command: |
             sudo npm i -g serverless
       - run:
+          name: Deploy Serverless
           command: |
             cd serverless
             make deploy-serverless
