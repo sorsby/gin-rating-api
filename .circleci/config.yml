@@ -1,0 +1,100 @@
+version: 2.0
+
+jobs:
+  install:
+    docker:
+      - image: circleci/golang:1.13.4
+    working_directory: ~/gin-rating-api
+    steps:
+      - checkout
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Download dependencies
+          command: make download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+
+  build:
+    docker:
+      - image: circleci/golang:1.13.4
+    working_directory: ~/gin-rating-api
+
+    steps:
+      - checkout
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Build
+          command: go build ./...
+      - run:
+          name: Build Serverless
+          command: |
+            cd serverless
+            make build
+
+  test:
+    docker:
+      - image: circleci/golang:1.13.4
+    working_directory: ~/gin-rating-api
+
+    environment: # environment variables for the build itself
+      TEST_RESULTS: /tmp/test-results # path to where test results will be saved
+
+    steps:
+      - checkout
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run: mkdir -p $TEST_RESULTS # create the test results directory
+      # store the results of our tests in the $TEST_RESULTS directory
+      - run:
+          name: Run tests
+          command: |
+            PACKAGE_NAMES=$(go list ./... | circleci tests split --split-by=timings --timings-type=classname)
+            gotestsum --junitfile ${TEST_RESULTS}/gotestsum-report.xml -- $PACKAGE_NAMES
+
+      - store_artifacts: # upload test summary for display in Artifacts
+          path: /tmp/test-results
+          destination: raw-test-output
+
+      - store_test_results: # upload test results for display in Test Summary
+          path: /tmp/test-results
+
+  deploy:
+    docker:
+      - image: circleci/node:10.17.0
+    working_directory: ~/gin-rating-api
+    steps:
+      - checkout
+      - run:
+          name: Install Serverless CLI
+          command: |
+            sudo npm i -g serverless
+      - run:
+          command: |
+            cd serverless
+            make deploy-serverless
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - install
+      - build:
+          requires:
+            - install
+      - test:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - master
