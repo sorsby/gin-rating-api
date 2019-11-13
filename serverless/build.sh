@@ -1,0 +1,1 @@
+env GOOS=linux go build -ldflags="-s -w -X github.com/sorsby/gin-rating-api/version.Version=${VERSION}" -o bin/api api/main.go

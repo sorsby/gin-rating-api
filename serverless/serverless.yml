@@ -1,0 +1,28 @@
+service: gin-rating-api
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: dev
+  region: eu-west-2
+  endpointType: regional
+  versionFunctions: false
+
+package:
+individually: true
+exclude:
+  - ./**
+
+functions:
+  api:
+    handler: bin/api
+    memorySize: 256
+    timeout: 15
+    reservedConcurrency: 5
+    package:
+      include:
+        - ./bin/api
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
