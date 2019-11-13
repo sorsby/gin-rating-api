@@ -1,8 +1,13 @@
 package gins
 
-import "net/http"
+import (
+	"github.com/sorsby/gin-rating-api/logger"
+	"net/http"
+)
 
-// Handler holds the dependencies for handling /gins requests.
+const pkg = "github.com/sorsby/gin-rating-api/gins"
+
+// Handler holds the dependencies for the /gins route handler.
 type Handler struct{}
 
 // NewHandler creates a new Handler.
@@ -10,7 +15,8 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-// Get handles GET requests to the /gins route.
-func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+// List handles GET requests to the /gins route.
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello World!"))
+	logger.Entry(pkg, "List").WithField("helloWorld", true).Info("successfully listed gins")
 }

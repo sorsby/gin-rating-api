@@ -13,6 +13,6 @@ func Create() (http.Handler, error) {
 	r.NotFoundHandler = http.NotFoundHandler()
 
 	gh := gins.NewHandler()
-	r.Path("/gins").Methods(http.MethodGet).HandlerFunc(gh.Get)
+	r.Path("/gins").Methods(http.MethodGet).HandlerFunc(gh.List)
 	return r, nil
 }

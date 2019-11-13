@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func TestGet(t *testing.T) {
+func TestList(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		req       *http.Request
@@ -19,7 +19,7 @@ func TestGet(t *testing.T) {
 		expBody   string
 	}{
 		{
-			desc:      "handler should always return hello world",
+			desc:      "success",
 			req:       httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
 			expStatus: http.StatusOK,
 			expBody:   "Hello World!",
@@ -30,7 +30,7 @@ func TestGet(t *testing.T) {
 			router := mux.NewRouter()
 
 			h := NewHandler()
-			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.Get)
+			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, tC.req)
