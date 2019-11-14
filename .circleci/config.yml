@@ -9,12 +9,12 @@ jobs:
       - checkout
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
+            - go-mod-v5-{{ checksum "go.sum" }}
       - run:
           name: Download dependencies
           command: make download
       - save_cache:
-          key: go-mod-v4-{{ checksum "go.sum" }}
+          key: go-mod-v5-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
             - "/go/bin"
@@ -27,7 +27,7 @@ jobs:
       - checkout
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
+            - go-mod-v5-{{ checksum "go.sum" }}
       - run:
           name: Lint
           command: make lint
@@ -44,7 +44,7 @@ jobs:
       - checkout
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
+            - go-mod-v5-{{ checksum "go.sum" }}
       - run:
           name: Build
           command: go build ./...
@@ -70,7 +70,7 @@ jobs:
       - checkout
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v4-{{ checksum "go.sum" }}
+            - go-mod-v5-{{ checksum "go.sum" }}
       - run: mkdir -p $TEST_RESULTS # create the test results directory
       # store the results of our tests in the $TEST_RESULTS directory
       - run:
