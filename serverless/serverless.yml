@@ -36,7 +36,7 @@ resources:
     ApiGatewayAuthorizer: 
       Type: AWS::ApiGateway::Authorizer
       Properties: 
-        Name: GinRatingCognitoUserPool
+        Name: ${self:custom.stage}-gin-rating-authorizer
         Type: COGNITO_USER_POOLS
         IdentitySource: method.request.header.Authorization
         RestApiId: 
@@ -48,3 +48,16 @@ resources:
 
     GinRatingUserPool:
       Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:custom.stage}-gin-rating-user-pool
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+    GinRatingUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:custom.stage}-gin-rating-user-pool-client
+        UserPoolId:
+          Ref: GinRatingUserPool
+        GenerateSecret: false
