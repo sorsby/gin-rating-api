@@ -3,37 +3,31 @@ version: 2
 jobs:
   install:
     docker:
-      - image: circleci/golang:1.13.4
+      - image: sorsby/go-serverless:latest
     working_directory: ~/gin-rating-api
     steps:
       - checkout
-      - run:
-          name: Permissions on /go/bin
-          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v7-{{ checksum "go.sum" }}
+            - go-mod-v8-{{ checksum "go.sum" }}
       - run:
           name: Download dependencies
           command: make download
       - save_cache:
-          key: go-mod-v7-{{ checksum "go.sum" }}
+          key: go-mod-v8-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
             - "/go/bin"
 
   lint:
     docker:
-      - image: circleci/golang:1.13.4
+      - image: sorsby/go-serverless:latest
     working_directory: ~/gin-rating-api
     steps:
       - checkout
-      - run:
-          name: Permissions on /go/bin
-          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v7-{{ checksum "go.sum" }}
+            - go-mod-v8-{{ checksum "go.sum" }}
       - run:
           name: Lint
           command: make lint
@@ -43,17 +37,14 @@ jobs:
 
   build:
     docker:
-      - image: circleci/golang:1.13.4
+      - image: sorsby/go-serverless:latest
     working_directory: ~/gin-rating-api
 
     steps:
       - checkout
-      - run:
-          name: Permissions on /go/bin
-          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v7-{{ checksum "go.sum" }}
+            - go-mod-v8-{{ checksum "go.sum" }}
       - run:
           name: Build
           command: go build ./...
@@ -69,7 +60,7 @@ jobs:
 
   test:
     docker:
-      - image: circleci/golang:1.13.4
+      - image: sorsby/go-serverless:latest
     working_directory: ~/gin-rating-api
 
     environment: # environment variables for the build itself
@@ -77,12 +68,9 @@ jobs:
 
     steps:
       - checkout
-      - run:
-          name: Permissions on /go/bin
-          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v7-{{ checksum "go.sum" }}
+            - go-mod-v8-{{ checksum "go.sum" }}
       - run: mkdir -p $TEST_RESULTS # create the test results directory
       # store the results of our tests in the $TEST_RESULTS directory
       - run:
@@ -100,19 +88,12 @@ jobs:
 
   deploy:
     docker:
-      - image: circleci/node:10.17.0
+      - image: sorsby/go-serverless:latest
     working_directory: ~/gin-rating-api
     steps:
       - checkout
-      - run:
-          name: Permissions on /go/bin
-          command: chown -R circleci /tmp
       - attach_workspace:
           at: ~/gin-rating-api
-      - run:
-          name: Install Serverless CLI
-          command: |
-            sudo npm i -g serverless
       - run:
           name: Deploy Serverless
           command: |
