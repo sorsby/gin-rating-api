@@ -26,3 +26,25 @@ functions:
       - http:
           path: /{proxy+}
           method: ANY
+          authorizer: 
+             type: COGNITO_USER_POOLS
+             authorizerId: 
+               Ref: ApiGatewayAuthorizer
+
+resources:
+  Resources:
+    ApiGatewayAuthorizer: 
+      Type: AWS::ApiGateway::Authorizer
+      Properties: 
+        Name: GinRatingCognitoUserPool
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        RestApiId: 
+          Ref: ApiGatewayRestApi
+        ProviderARNs: 
+          - Fn::GetAtt:
+              - GinRatingUserPool
+              - Arn
+
+    GinRatingUserPool:
+      Type: AWS::Cognito::UserPool

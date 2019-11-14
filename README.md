@@ -2,8 +2,8 @@
 Serverless API built with AWS Lambda, API Gateway and Cognito for authorization.
 
 ### TODO
-- Setup circleci workflow to build, lint, test and deploy API.
-- Add logging library `logrus` ✅
+- Setup circleci workflow to build, lint, test and deploy API. ✅
+- Add logging library `logrus`. ✅
 - Cognito authorization for API endpoints.
 - Investigate/create package to easily make JSON responses for endpoints.
 - Design dynamo table to store information for different gins.
