@@ -108,9 +108,11 @@ workflows:
   build-and-deploy:
     jobs:
       - install
+      - lint
       - build:
           requires:
             - install
+            - lint
       - test:
           requires:
             - build
