@@ -115,9 +115,11 @@ workflows:
             - lint
       - test:
           requires:
-            - build
+            - install
+            - lint
       - deploy:
           requires:
+            - build
             - test
           filters:
             branches:
