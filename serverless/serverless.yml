@@ -7,6 +7,7 @@ provider:
   region: eu-west-2
   endpointType: regional
   versionFunctions: false
+  custom:
 
 package:
 individually: true
@@ -36,7 +37,7 @@ resources:
     ApiGatewayAuthorizer: 
       Type: AWS::ApiGateway::Authorizer
       Properties: 
-        Name: ${self:custom.stage}-gin-rating-authorizer
+        Name: ${opt:stage, self:provider.stage}-gin-rating-authorizer
         Type: COGNITO_USER_POOLS
         IdentitySource: method.request.header.Authorization
         RestApiId: 
@@ -49,7 +50,7 @@ resources:
     GinRatingUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: ${self:custom.stage}-gin-rating-user-pool
+        UserPoolName: ${opt:stage, self:provider.stage}-gin-rating-user-pool
         UsernameAttributes:
           - email
         AutoVerifiedAttributes:
@@ -57,7 +58,7 @@ resources:
     GinRatingUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: ${self:custom.stage}-gin-rating-user-pool-client
+        ClientName: ${opt:stage, self:provider.stage}-gin-rating-user-pool-client
         UserPoolId:
           Ref: GinRatingUserPool
         GenerateSecret: false
