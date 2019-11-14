@@ -1,4 +1,4 @@
-version: 2.0
+version: 2
 
 jobs:
   install:
@@ -7,17 +7,20 @@ jobs:
     working_directory: ~/gin-rating-api
     steps:
       - checkout
+      - run:
+          name: Permissions on /go/bin
+          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v6-{{ checksum "go.sum" }}
+            - go-mod-v7-{{ checksum "go.sum" }}
       - run:
           name: Download dependencies
           command: make download
       - save_cache:
-          key: go-mod-v6-{{ checksum "go.sum" }}
+          key: go-mod-v7-{{ checksum "go.sum" }}
           paths:
-            - /go/bin
-            - /go/pkg
+            - "/go/pkg/mod"
+            - "/go/bin"
 
   lint:
     docker:
@@ -25,9 +28,12 @@ jobs:
     working_directory: ~/gin-rating-api
     steps:
       - checkout
+      - run:
+          name: Permissions on /go/bin
+          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v6-{{ checksum "go.sum" }}
+            - go-mod-v7-{{ checksum "go.sum" }}
       - run:
           name: Lint
           command: make lint
@@ -42,9 +48,12 @@ jobs:
 
     steps:
       - checkout
+      - run:
+          name: Permissions on /go/bin
+          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v6-{{ checksum "go.sum" }}
+            - go-mod-v7-{{ checksum "go.sum" }}
       - run:
           name: Build
           command: go build ./...
@@ -68,9 +77,12 @@ jobs:
 
     steps:
       - checkout
+      - run:
+          name: Permissions on /go/bin
+          command: chown -R circleci /tmp
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - go-mod-v6-{{ checksum "go.sum" }}
+            - go-mod-v7-{{ checksum "go.sum" }}
       - run: mkdir -p $TEST_RESULTS # create the test results directory
       # store the results of our tests in the $TEST_RESULTS directory
       - run:
@@ -92,6 +104,9 @@ jobs:
     working_directory: ~/gin-rating-api
     steps:
       - checkout
+      - run:
+          name: Permissions on /go/bin
+          command: chown -R circleci /tmp
       - attach_workspace:
           at: ~/gin-rating-api
       - run:
