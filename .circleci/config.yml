@@ -61,6 +61,9 @@ jobs:
   test:
     docker:
       - image: sorsby/go-serverless:latest
+      - image: localstack/localstack
+        environment:
+          SERVICES: dynamodb
     working_directory: ~/gin-rating-api
 
     environment: # environment variables for the build itself
