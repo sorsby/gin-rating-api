@@ -54,8 +54,74 @@ func TestList(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.ginLister)
+			h := NewHandler(tC.ginLister, nil)
 			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, tC.req)
+			if tC.expStatus != w.Code {
+				t.Errorf("expected status %v, got %v", tC.expStatus, w.Code)
+			}
+			actualBody, err := ioutil.ReadAll(w.Body)
+			if err != nil {
+				t.Errorf("unexpected error reading body: '%v'", err)
+			}
+			if tC.expBody != string(actualBody) {
+				t.Errorf("expected body '%v', got '%v'", tC.expBody, string(actualBody))
+			}
+		})
+	}
+}
+
+func TestPost(t *testing.T) {
+
+	invalidBody := `{"name":"","quantity":"300ml","abv":"44"}`
+	validBody := `{"name":"valid-gin","quantity":"300ml","abv":"44"}`
+
+	testCases := []struct {
+		desc       string
+		req        *http.Request
+		ginCreator data.GinCreater
+		expStatus  int
+		expBody    string
+	}{
+		{
+			desc:      "invalid json request body",
+			req:       httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(`{{...}`)),
+			expStatus: http.StatusInternalServerError,
+			expBody:   `"invalid character '{' looking for beginning of object key string"` + "\n",
+		},
+		{
+			desc:      "invalid post request body content",
+			req:       httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(invalidBody)),
+			expStatus: http.StatusInternalServerError,
+			expBody:   `"name must not be an empty string"` + "\n",
+		},
+		{
+			desc: "gin creator fails",
+			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
+			ginCreator: func(in data.CreateGinInput) error {
+				return errors.New("failure")
+			},
+			expStatus: http.StatusInternalServerError,
+			expBody:   `"failure"` + "\n",
+		},
+		{
+			desc: "success",
+			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
+			ginCreator: func(in data.CreateGinInput) error {
+				return nil
+			},
+			expStatus: http.StatusOK,
+			expBody:   `"{\"ok\":true}"` + "\n",
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			router := mux.NewRouter()
+
+			h := NewHandler(nil, tC.ginCreator)
+			router.Path("/gins").Methods(http.MethodPost).HandlerFunc(h.Post)
 
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, tC.req)

@@ -16,7 +16,9 @@ func Create(set settings.APISettings) (http.Handler, error) {
 
 	dmgr := dynamo.NewManager(set.GinRatingTableName)
 
-	gh := gins.NewHandler(dmgr.ListGins)
+	// Gin endpoints.
+	gh := gins.NewHandler(dmgr.ListGins, dmgr.CreateGin)
 	r.Path("/gins").Methods(http.MethodGet).HandlerFunc(gh.List)
+	r.Path("/gins").Methods(http.MethodPost).HandlerFunc(gh.Post)
 	return r, nil
 }
