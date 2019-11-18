@@ -28,7 +28,7 @@ func TestList(t *testing.T) {
 				return data.ListGinOutput{}, errors.New("failure")
 			},
 			expStatus: http.StatusInternalServerError,
-			expBody:   `"failure"`,
+			expBody:   `"failure"` + "\n",
 		},
 		{
 			desc: "success",
@@ -47,7 +47,7 @@ func TestList(t *testing.T) {
 				}, nil
 			},
 			expStatus: http.StatusOK,
-			expBody:   `"{\"gins\":[{\"ID\":\"123\",\"name\":\"gin-1\",\"quantity\":\"300ml\",\"abv\":\"40\",\"imageUrl\":\"\",\"lastModified\":\"123\"}]}"`,
+			expBody:   `"{\"gins\":[{\"ID\":\"123\",\"name\":\"gin-1\",\"quantity\":\"300ml\",\"abv\":\"40\",\"imageUrl\":\"\",\"lastModified\":\"123\"}]}"` + "\n",
 		},
 	}
 	for _, tC := range testCases {
