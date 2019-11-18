@@ -1,22 +1,44 @@
 package gins
 
 import (
-	"github.com/sorsby/gin-rating-api/logger"
+	"encoding/json"
 	"net/http"
+
+	"github.com/sorsby/gin-rating-api/data"
+	"github.com/sorsby/gin-rating-api/logger"
+	"github.com/thedevsaddam/renderer"
 )
 
 const pkg = "github.com/sorsby/gin-rating-api/gins"
 
 // Handler holds the dependencies for the /gins route handler.
-type Handler struct{}
+type Handler struct {
+	rnd       *renderer.Render
+	GinLister data.GinLister
+}
 
 // NewHandler creates a new Handler.
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(gl data.GinLister) *Handler {
+	return &Handler{
+		rnd:       renderer.New(),
+		GinLister: gl,
+	}
 }
 
 // List handles GET requests to the /gins route.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello World!"))
-	logger.Entry(pkg, "List").WithField("helloWorld", true).Info("successfully listed gins")
+	logger.Entry(pkg, "List").Info("listing gins")
+	gins, err := h.GinLister()
+	if err != nil {
+		logger.Entry(pkg, "List").WithError(err).Error("failed to list gins")
+		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	rj, err := json.Marshal(gins)
+	if err != nil {
+		logger.Entry(pkg, "List").WithError(err).Error("failed to marshal gins to json")
+		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
+	}
+	h.rnd.JSON(w, http.StatusOK, string(rj))
+	logger.Entry(pkg, "List").Info("successfully listed gins")
 }

@@ -5,6 +5,9 @@ import "time"
 // GinCreater creates a new gin the database.
 type GinCreater func(in CreateGinInput) error
 
+// GinLister lists the gins in the database.
+type GinLister func() (ListGinOutput, error)
+
 // CreateGinInput defines the input data required to create a new gin.
 type CreateGinInput struct {
 	Name         string
@@ -15,8 +18,7 @@ type CreateGinInput struct {
 
 // GinItem is a gin retrieved from the db.
 type GinItem struct {
-	Filter       string `json:"pk"`
-	ID           string `json:"sk"`
+	ID           string `json:"ID"`
 	Name         string `json:"name"`
 	Quantity     string `json:"quantity"`
 	ABV          string `json:"abv"`
@@ -26,5 +28,5 @@ type GinItem struct {
 
 // ListGinOutput is the output from listing the gins in the db.
 type ListGinOutput struct {
-	GinItems []GinItem
+	GinItems []GinItem `json:"gins"`
 }

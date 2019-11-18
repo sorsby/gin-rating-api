@@ -7,6 +7,26 @@ provider:
   region: eu-west-2
   endpointType: regional
   versionFunctions: false
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Query
+        - dynamodb:UpdateItem
+        - dynamodb:GetItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+      Resource:
+        - Fn::GetAtt: [GinRatingTable, Arn]
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+      Resource:
+        Fn::Join:
+          - ""
+          - - Fn::GetAtt: [GinRatingTable, Arn]
+            - "/index/*"
+    - Effect: "Allow"
 
 package:
 individually: true
@@ -30,6 +50,9 @@ functions:
              type: COGNITO_USER_POOLS
              authorizerId: 
                Ref: ApiGatewayAuthorizer
+    environment:
+      GIN_RATING_TABLE_NAME:
+        Ref: GinRatingTable
 
 resources:
   Resources:
@@ -64,7 +87,7 @@ resources:
         ExplicitAuthFlows:
           - ADMIN_NO_SRP_AUTH
 
-    DataTable:
+    GinRatingTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Retain
       Properties:
