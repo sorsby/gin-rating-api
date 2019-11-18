@@ -6,21 +6,23 @@ import (
 
 	"github.com/sorsby/gin-rating-api/data"
 	"github.com/sorsby/gin-rating-api/logger"
-	"github.com/thedevsaddam/renderer"
+	"github.com/unrolled/render"
 )
 
 const pkg = "github.com/sorsby/gin-rating-api/gins"
 
 // Handler holds the dependencies for the /gins route handler.
 type Handler struct {
-	rnd       *renderer.Render
+	rnd       *render.Render
 	GinLister data.GinLister
 }
 
 // NewHandler creates a new Handler.
 func NewHandler(gl data.GinLister) *Handler {
 	return &Handler{
-		rnd:       renderer.New(),
+		rnd: render.New(render.Options{
+			StreamingJSON: true,
+		}),
 		GinLister: gl,
 	}
 }
