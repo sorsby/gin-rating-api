@@ -26,7 +26,6 @@ provider:
           - ""
           - - Fn::GetAtt: [GinRatingTable, Arn]
             - "/index/*"
-    - Effect: "Allow"
 
 package:
 individually: true
