@@ -1,18 +1,29 @@
 package main
 
 import (
-	"os"
+	"log"
 
 	"github.com/akrylysov/algnhsa"
+	"github.com/andreaperizzato/go-config"
 	"github.com/sorsby/gin-rating-api/api/routes"
+	"github.com/sorsby/gin-rating-api/settings"
 )
 
 const pkg = "github.com/sorsby/gin-rating-api/serverless/api"
 
 func main() {
-	h, err := routes.Create()
+	l := config.NewLoader(
+		config.NewEnvSource(),
+	)
+	var s settings.APISettings
+	err := l.Load(&s)
 	if err != nil {
-		os.Exit(-1)
+		log.Fatal(err)
+	}
+
+	h, err := routes.Create(s)
+	if err != nil {
+		log.Fatal(err)
 	}
 	algnhsa.ListenAndServe(h, nil)
 }

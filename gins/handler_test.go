@@ -1,6 +1,7 @@
 package gins
 
 import (
+	"errors"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -9,27 +10,51 @@ import (
 	"net/http/httptest"
 
 	"github.com/gorilla/mux"
+	"github.com/sorsby/gin-rating-api/data"
 )
 
 func TestList(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		req       *http.Request
+		ginLister data.GinLister
 		expStatus int
 		expBody   string
 	}{
 		{
-			desc:      "success",
-			req:       httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
+			desc: "gin lister fails",
+			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
+			ginLister: func() (data.ListGinOutput, error) {
+				return data.ListGinOutput{}, errors.New("failure")
+			},
+			expStatus: http.StatusInternalServerError,
+			expBody:   `"failure"`,
+		},
+		{
+			desc: "success",
+			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
+			ginLister: func() (data.ListGinOutput, error) {
+				return data.ListGinOutput{
+					GinItems: []data.GinItem{
+						data.GinItem{
+							ID:           "123",
+							Name:         "gin-1",
+							Quantity:     "300ml",
+							ABV:          "40",
+							LastModified: "123",
+						},
+					},
+				}, nil
+			},
 			expStatus: http.StatusOK,
-			expBody:   "Hello World!",
+			expBody:   `"{\"gins\":[{\"ID\":\"123\",\"name\":\"gin-1\",\"quantity\":\"300ml\",\"abv\":\"40\",\"imageUrl\":\"\",\"lastModified\":\"123\"}]}"`,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler()
+			h := NewHandler(tC.ginLister)
 			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
 
 			w := httptest.NewRecorder()
