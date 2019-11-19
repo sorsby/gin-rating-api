@@ -28,6 +28,8 @@ func Get(ctx context.Context) (claims Claims, ok bool, err error) {
 		logger.Entry(pkg, "Post").Error("failed to proxy request from context")
 		return
 	}
+	logger.Entry(pkg, "claims.Get").WithField("authorizer", proxyReq.RequestContext.Authorizer).Info("got authorizer from request context")
+	logger.Entry(pkg, "claims.Get").WithField("claims", proxyReq.RequestContext.Authorizer["claims"]).Info("got claims json from request context")
 	claimsJSON, ok := proxyReq.RequestContext.Authorizer["claims"].([]byte)
 	err = json.Unmarshal(claimsJSON, &claims)
 	if err != nil {
