@@ -11,7 +11,6 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/sirupsen/logrus v1.4.2
 	github.com/unrolled/render v1.0.1
-	github.com/welldigital/response v0.0.0-20181107101956-9a1a03a1f6bc
 	golang.org/x/net v0.0.0-20181102091132-c10e9556a7bc // indirect
 	golang.org/x/sys v0.0.0-20191113165036-4c7a9d0fe056 // indirect
 	golang.org/x/text v0.3.0 // indirect
