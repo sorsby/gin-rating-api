@@ -13,4 +13,15 @@ Serverless API built with AWS Lambda, API Gateway and Cognito for authorization.
   - Store datestamp against reviews as to support 'gin of the week' and such.
 - Add package(s) for DB interactions with DynamoDB. ✅
 - Investigate/create package to easily make JSON responses for endpointd `render`. ✅
-- Parse claims from API Gateway proxy request context.
+- Parse claims from the Authorization header JWT token. ✅
+- Change logging to use use `logger.For` instead of `logger.Entry`. 🔧
+- Review /gins handler unit tests.
+- Review error responses in /gins endpoints.
+- Review handling of duplicate gins.
+  - Allow users to only update gins they have uploaded.
+- Endpoints to add reviews for gins.
+  - Short text review and an out of 5 star rating for each gin.
+- Explore backend work for user signup and login.
+- Configure DNS.
+  
+  MVP COMPLETE -> FRONTEND
