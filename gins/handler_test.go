@@ -1,7 +1,6 @@
 package gins
 
 import (
-	"context"
 	"errors"
 	"io/ioutil"
 	"strings"
@@ -17,18 +16,18 @@ import (
 
 func TestList(t *testing.T) {
 	testCases := []struct {
-		desc         string
-		req          *http.Request
-		claimsGetter claims.Getter
-		ginLister    data.GinLister
-		expStatus    int
-		expBody      string
+		desc      string
+		req       *http.Request
+		auth      claims.Authorizer
+		ginLister data.GinLister
+		expStatus int
+		expBody   string
 	}{
 		{
 			desc: "gin lister fails",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{}, errors.New("failure")
@@ -39,8 +38,8 @@ func TestList(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{
@@ -63,7 +62,7 @@ func TestList(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.claimsGetter, tC.ginLister, nil)
+			h := NewHandler(tC.auth, tC.ginLister, nil)
 			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
 
 			w := httptest.NewRecorder()
@@ -88,18 +87,18 @@ func TestPost(t *testing.T) {
 	validBody := `{"name":"valid-gin","quantity":"300ml","abv":"44"}`
 
 	testCases := []struct {
-		desc         string
-		req          *http.Request
-		claimsGetter claims.Getter
-		ginCreator   data.GinCreater
-		expStatus    int
-		expBody      string
+		desc       string
+		req        *http.Request
+		auth       claims.Authorizer
+		ginCreator data.GinCreater
+		expStatus  int
+		expBody    string
 	}{
 		{
 			desc: "invalid json request body",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(`{{...}`)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"invalid character '{' looking for beginning of object key string"` + "\n",
@@ -107,8 +106,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "invalid post request body content",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(invalidBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"name must not be an empty string"` + "\n",
@@ -116,8 +115,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "gin creator fails",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return errors.New("failure")
@@ -128,8 +127,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
-				return claims, true, nil
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
 			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return nil
@@ -142,7 +141,7 @@ func TestPost(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.claimsGetter, nil, tC.ginCreator)
+			h := NewHandler(tC.auth, nil, tC.ginCreator)
 			router.Path("/gins").Methods(http.MethodPost).HandlerFunc(h.Post)
 
 			w := httptest.NewRecorder()

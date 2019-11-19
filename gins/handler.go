@@ -16,21 +16,21 @@ const pkg = "github.com/sorsby/gin-rating-api/gins"
 
 // Handler holds the dependencies for the /gins route handler.
 type Handler struct {
-	rnd          *render.Render
-	ClaimsGetter claims.Getter
-	GinLister    data.GinLister
-	GinCreator   data.GinCreater
+	rnd        *render.Render
+	Authorizer claims.Authorizer
+	GinLister  data.GinLister
+	GinCreator data.GinCreater
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(cg claims.Getter, gl data.GinLister, gc data.GinCreater) *Handler {
+func NewHandler(a claims.Authorizer, gl data.GinLister, gc data.GinCreater) *Handler {
 	return &Handler{
 		rnd: render.New(render.Options{
 			StreamingJSON: true,
 		}),
-		ClaimsGetter: cg,
-		GinLister:    gl,
-		GinCreator:   gc,
+		Authorizer: a,
+		GinLister:  gl,
+		GinCreator: gc,
 	}
 }
 
@@ -56,12 +56,18 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // Post handles POST requests to the /gins route.
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	logger.Entry(pkg, "List").Info("upserting gin")
-	c, ok, err := h.ClaimsGetter(r.Context())
-	if err != nil || !ok {
-		logger.Entry(pkg, "Post").WithField("ok", ok).WithError(err).Error("unable to parse claims")
-		h.rnd.JSON(w, http.StatusInternalServerError, "unable to parse claims")
+	claims, ok, err := h.Authorizer(r)
+	if err != nil {
+		logger.Entry(pkg, "Post").WithError(err).Error("authorizer failed")
+		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if !ok {
+		logger.Entry(pkg, "Post").WithError(err).Error("forbidden")
+		h.rnd.JSON(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	logger.For(pkg, "List", claims.UserID).WithField("url", r.URL).Info("authorized")
 	var gr PostRequest
 	j, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -88,7 +94,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 
 	err = h.GinCreator(data.CreateGinInput{
 		ID:       uuid.New().String(),
-		UserID:   c.Sub,
+		UserID:   claims.UserID,
 		Name:     gr.Name,
 		Quantity: gr.Quantity,
 		ABV:      gr.ABV,

@@ -52,6 +52,9 @@ functions:
     environment:
       GIN_RATING_TABLE_NAME:
         Ref: GinRatingTable
+      COGNITO_REGION: ${opt:region, self:provider.region}
+      COGNITO_USER_POOL:
+        Ref: GinRatingUserPool
 
 resources:
   Resources:

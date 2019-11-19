@@ -14,11 +14,13 @@ import (
 func Create(set settings.APISettings) (http.Handler, error) {
 	r := mux.NewRouter()
 	r.NotFoundHandler = http.NotFoundHandler()
+	keyGetter := claims.NewOneTimeKeyFetcher(set.CognitoRegion, set.CognitoUserPool)
+	auth := claims.New(keyGetter)
 
 	dmgr := dynamo.NewManager(set.GinRatingTableName)
 
 	// Gin endpoints.
-	gh := gins.NewHandler(claims.Get, dmgr.ListGins, dmgr.CreateGin)
+	gh := gins.NewHandler(auth.FromAuthorizationHeader, dmgr.ListGins, dmgr.CreateGin)
 	r.Path("/gins").Methods(http.MethodGet).HandlerFunc(gh.List)
 	r.Path("/gins").Methods(http.MethodPost).HandlerFunc(gh.Post)
 	return r, nil

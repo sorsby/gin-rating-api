@@ -1,47 +1,80 @@
 package claims
 
 import (
-	"context"
-	"encoding/json"
+	"crypto/rsa"
+	"errors"
+	"net/http"
 
-	"github.com/akrylysov/algnhsa"
-	"github.com/sorsby/gin-rating-api/logger"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const pkg = "github.com/sorsby/gin-rating-api/claims"
 
-// Getter gets the claims from the context.
-type Getter func(ctx context.Context) (claims Claims, ok bool, err error)
+// Authorizer parses the claims for a request from the Authorization header.
+type Authorizer func(*http.Request) (Claims, bool, error)
 
 // Claims represents the cognito user pool claims.
 type Claims struct {
-	CognitoGroups   string `json:"cognito:groups"`
-	CognitoUsername string `json:"cognito:username"`
-	Email           string `json:"email"`
-	Sub             string `json:"sub"`
+	Groups   []string `json:"cognito:groups"`
+	Username string   `json:"cognito:username"`
+	Email    string   `json:"email"`
+	UserID   string   `json:"sub"`
+	jwt.StandardClaims
 }
 
-// Authorizer is the outer authorization object in the request context.
-type Authorizer struct {
-	Claims Claims `json:"claims"`
+// IsStaff returns true when the user is a member of the staff.
+func (c Claims) IsStaff() bool {
+	return c.belongsToGroup("Staff")
 }
 
-// Get gets the claims from the context.
-func Get(ctx context.Context) (claims Claims, ok bool, err error) {
-	proxyReq, ok := algnhsa.ProxyRequestFromContext(ctx)
-	if !ok {
-		logger.Entry(pkg, "Post").Error("failed to proxy request from context")
+func (c Claims) belongsToGroup(group string) bool {
+	for _, g := range c.Groups {
+		if g == group {
+			return true
+		}
+	}
+	return false
+}
+
+// Auth contains AWS public keys required for validating Cognito JWTs.
+type Auth struct {
+	keyGetter func(kid string) (*rsa.PublicKey, error)
+}
+
+// New creates a new authorizer with the provided keys.
+// keyGetter is a function that maps the "kid" key in the header of the JWT to a parsed Public Key.
+func New(keyGetter func(kid string) (*rsa.PublicKey, error)) (a *Auth) {
+	return &Auth{
+		keyGetter: keyGetter,
+	}
+}
+
+// FromAuthorizationHeader gets the Authorization header and parses the claims from the JWT.
+func (a *Auth) FromAuthorizationHeader(r *http.Request) (claims Claims, found bool, err error) {
+	return a.FromAuthorizationToken(r.Header.Get("Authorization"))
+}
+
+// FromAuthorizationToken retrieves the claim from the authorization token.
+func (a *Auth) FromAuthorizationToken(token string) (claims Claims, found bool, err error) {
+	if token == "" {
 		return
 	}
-	claimsJSON, ok := proxyReq.RequestContext.Authorizer["claims"].([]byte)
-	if !ok {
-		logger.Entry(pkg, "Post").Error("expected json but was unable to assert type")
-		return
-	}
-	err = json.Unmarshal(claimsJSON, &claims)
+
+	// Fall back to getting it from the request.
+	found = true
+	_, err = jwt.ParseWithClaims(token, &claims, a.getKey)
 	if err != nil {
-		logger.Entry(pkg, "claims.Get").WithError(err).Error("failed to unmarshal claims")
 		return
 	}
-	return claims, true, err
+
+	return
+}
+
+func (a *Auth) getKey(token *jwt.Token) (interface{}, error) {
+	keyID, ok := token.Header["kid"].(string)
+	if !ok {
+		return nil, errors.New("expecting JWT header to have string kid")
+	}
+
+	return a.keyGetter(keyID)
 }
