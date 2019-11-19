@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/sorsby/gin-rating-api/claims"
 	"github.com/sorsby/gin-rating-api/data"
 	"github.com/sorsby/gin-rating-api/logger"
 	"github.com/unrolled/render"
@@ -14,19 +16,21 @@ const pkg = "github.com/sorsby/gin-rating-api/gins"
 
 // Handler holds the dependencies for the /gins route handler.
 type Handler struct {
-	rnd        *render.Render
-	GinLister  data.GinLister
-	GinCreator data.GinCreater
+	rnd          *render.Render
+	ClaimsGetter claims.Getter
+	GinLister    data.GinLister
+	GinCreator   data.GinCreater
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(gl data.GinLister, gc data.GinCreater) *Handler {
+func NewHandler(cg claims.Getter, gl data.GinLister, gc data.GinCreater) *Handler {
 	return &Handler{
 		rnd: render.New(render.Options{
 			StreamingJSON: true,
 		}),
-		GinLister:  gl,
-		GinCreator: gc,
+		ClaimsGetter: cg,
+		GinLister:    gl,
+		GinCreator:   gc,
 	}
 }
 
@@ -52,7 +56,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // Post handles POST requests to the /gins route.
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	logger.Entry(pkg, "List").Info("upserting gin")
-
+	c, ok := h.ClaimsGetter(r.Context())
+	if !ok {
+		logger.Entry(pkg, "Post").Error("unable to parse claims")
+		h.rnd.JSON(w, http.StatusInternalServerError, "unable to parse claims")
+		return
+	}
 	var gr PostRequest
 	j, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -78,6 +87,8 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		Info("successfully parsed post request body")
 
 	err = h.GinCreator(data.CreateGinInput{
+		ID:       uuid.New().String(),
+		UserID:   c.Sub,
 		Name:     gr.Name,
 		Quantity: gr.Quantity,
 		ABV:      gr.ABV,

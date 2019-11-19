@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/sorsby/gin-rating-api/claims"
 	"github.com/sorsby/gin-rating-api/dynamo"
 	"github.com/sorsby/gin-rating-api/gins"
 	"github.com/sorsby/gin-rating-api/settings"
@@ -17,7 +18,7 @@ func Create(set settings.APISettings) (http.Handler, error) {
 	dmgr := dynamo.NewManager(set.GinRatingTableName)
 
 	// Gin endpoints.
-	gh := gins.NewHandler(dmgr.ListGins, dmgr.CreateGin)
+	gh := gins.NewHandler(claims.Get, dmgr.ListGins, dmgr.CreateGin)
 	r.Path("/gins").Methods(http.MethodGet).HandlerFunc(gh.List)
 	r.Path("/gins").Methods(http.MethodPost).HandlerFunc(gh.Post)
 	return r, nil

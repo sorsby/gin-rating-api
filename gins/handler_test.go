@@ -1,6 +1,7 @@
 package gins
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"strings"
@@ -10,20 +11,25 @@ import (
 	"net/http/httptest"
 
 	"github.com/gorilla/mux"
+	"github.com/sorsby/gin-rating-api/claims"
 	"github.com/sorsby/gin-rating-api/data"
 )
 
 func TestList(t *testing.T) {
 	testCases := []struct {
-		desc      string
-		req       *http.Request
-		ginLister data.GinLister
-		expStatus int
-		expBody   string
+		desc         string
+		req          *http.Request
+		claimsGetter claims.Getter
+		ginLister    data.GinLister
+		expStatus    int
+		expBody      string
 	}{
 		{
 			desc: "gin lister fails",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{}, errors.New("failure")
 			},
@@ -33,6 +39,9 @@ func TestList(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{
 					GinItems: []data.GinItem{
@@ -54,7 +63,7 @@ func TestList(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.ginLister, nil)
+			h := NewHandler(tC.claimsGetter, tC.ginLister, nil)
 			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
 
 			w := httptest.NewRecorder()
@@ -79,27 +88,37 @@ func TestPost(t *testing.T) {
 	validBody := `{"name":"valid-gin","quantity":"300ml","abv":"44"}`
 
 	testCases := []struct {
-		desc       string
-		req        *http.Request
-		ginCreator data.GinCreater
-		expStatus  int
-		expBody    string
+		desc         string
+		req          *http.Request
+		claimsGetter claims.Getter
+		ginCreator   data.GinCreater
+		expStatus    int
+		expBody      string
 	}{
 		{
-			desc:      "invalid json request body",
-			req:       httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(`{{...}`)),
+			desc: "invalid json request body",
+			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(`{{...}`)),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"invalid character '{' looking for beginning of object key string"` + "\n",
 		},
 		{
-			desc:      "invalid post request body content",
-			req:       httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(invalidBody)),
+			desc: "invalid post request body content",
+			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(invalidBody)),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"name must not be an empty string"` + "\n",
 		},
 		{
 			desc: "gin creator fails",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return errors.New("failure")
 			},
@@ -109,6 +128,9 @@ func TestPost(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
+				return claims, true
+			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return nil
 			},
@@ -120,7 +142,7 @@ func TestPost(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(nil, tC.ginCreator)
+			h := NewHandler(tC.claimsGetter, nil, tC.ginCreator)
 			router.Path("/gins").Methods(http.MethodPost).HandlerFunc(h.Post)
 
 			w := httptest.NewRecorder()
