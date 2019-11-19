@@ -46,6 +46,7 @@ func TestList(t *testing.T) {
 					GinItems: []data.GinItem{
 						data.GinItem{
 							ID:           "123",
+							UserID:       "user-id",
 							Name:         "gin-1",
 							Quantity:     "300ml",
 							ABV:          "40",
@@ -55,7 +56,7 @@ func TestList(t *testing.T) {
 				}, nil
 			},
 			expStatus: http.StatusOK,
-			expBody:   `"{\"gins\":[{\"ID\":\"123\",\"name\":\"gin-1\",\"quantity\":\"300ml\",\"abv\":\"40\",\"imageUrl\":\"\",\"lastModified\":\"123\"}]}"` + "\n",
+			expBody:   `"{\"gins\":[{\"pk\":\"\",\"sk\":\"\",\"id\":\"123\",\"userId\":\"user-id\",\"name\":\"gin-1\",\"quantity\":\"300ml\",\"abv\":\"40\",\"imageUrl\":\"\",\"lastModified\":\"123\"}]}"` + "\n",
 		},
 	}
 	for _, tC := range testCases {
@@ -118,8 +119,8 @@ func TestPost(t *testing.T) {
 			auth: func(r *http.Request) (claims.Claims, bool, error) {
 				return claims.Claims{}, true, nil
 			},
-			ginCreator: func(in data.CreateGinInput) error {
-				return errors.New("failure")
+			ginCreator: func(in data.CreateGinInput) (bool, error) {
+				return false, errors.New("failure")
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"failure"` + "\n",
@@ -130,8 +131,8 @@ func TestPost(t *testing.T) {
 			auth: func(r *http.Request) (claims.Claims, bool, error) {
 				return claims.Claims{}, true, nil
 			},
-			ginCreator: func(in data.CreateGinInput) error {
-				return nil
+			ginCreator: func(in data.CreateGinInput) (bool, error) {
+				return true, nil
 			},
 			expStatus: http.StatusOK,
 			expBody:   `"{\"ok\":true}"` + "\n",

@@ -30,12 +30,22 @@ func NewManager(tableName string) *Manager {
 }
 
 // CreateGin creates the necessary items in the DB for a new gin entry.
-func (mgr *Manager) CreateGin(in data.CreateGinInput) error {
+func (mgr *Manager) CreateGin(in data.CreateGinInput) (bool, error) {
 	var writeItems []*dynamodb.TransactWriteItem
-	ngi := newGinItem(in, mgr.now())
+
+	// Return !ok if gin already exists in the db.
+	_, found, err := mgr.GetGin(in.Name)
+	if err != nil {
+		return false, fmt.Errorf("dynamo.CreateGin: error getting gin: %w", err)
+	}
+	if found {
+		return false, nil
+	}
+
+	ngi := newListGinItem(in, mgr.now())
 	ginJSON, err := dynamodbattribute.MarshalMap(ngi)
 	if err != nil {
-		return fmt.Errorf("dynamo.CreateGin: error marshalling gin item: %w", err)
+		return false, fmt.Errorf("dynamo.CreateGin: error marshalling gin item: %w", err)
 	}
 	gp := dynamodb.Put{
 		TableName: aws.String(mgr.tableName),
@@ -46,7 +56,7 @@ func (mgr *Manager) CreateGin(in data.CreateGinInput) error {
 	nngi := newNamedGinItem(in, mgr.now())
 	namedGinJSON, err := dynamodbattribute.MarshalMap(nngi)
 	if err != nil {
-		return fmt.Errorf("dynamo.CreateGin: error marshalling named gin item: %w", err)
+		return false, fmt.Errorf("dynamo.CreateGin: error marshalling named gin item: %w", err)
 	}
 	ngp := dynamodb.Put{
 		TableName: aws.String(mgr.tableName),
@@ -56,7 +66,7 @@ func (mgr *Manager) CreateGin(in data.CreateGinInput) error {
 	_, err = mgr.db.TransactWriteItems(&dynamodb.TransactWriteItemsInput{
 		TransactItems: writeItems,
 	})
-	return err
+	return true, err
 }
 
 // ListGins lists all the gins in the database.
@@ -80,7 +90,7 @@ func (mgr *Manager) GetGin(name string) (gi data.GinItem, found bool, err error)
 		TableName:              aws.String(mgr.tableName),
 		KeyConditionExpression: aws.String("pk=:pk_value"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":pk_value": &dynamodb.AttributeValue{S: aws.String("new-gin")},
+			":pk_value": &dynamodb.AttributeValue{S: aws.String(name)},
 		},
 	})
 	if err != nil {

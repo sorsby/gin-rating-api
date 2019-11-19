@@ -92,7 +92,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		WithField("requestBody", gr).
 		Info("successfully parsed post request body")
 
-	err = h.GinCreator(data.CreateGinInput{
+	ok, err = h.GinCreator(data.CreateGinInput{
 		ID:       uuid.New().String(),
 		UserID:   claims.UserID,
 		Name:     gr.Name,
@@ -102,6 +102,11 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Entry(pkg, "Post").WithError(err).Error("failed to upsert gin")
 		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !ok {
+		logger.Entry(pkg, "Post").Info("gin already exists")
+		h.rnd.JSON(w, http.StatusConflict, []byte("gin already exists"))
 		return
 	}
 

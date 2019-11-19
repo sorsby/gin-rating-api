@@ -8,23 +8,12 @@ import (
 )
 
 const ginFilter = "gin"
+const userFilter = "user"
 
-type ginItem struct {
-	PK           string `json:"pk"`
-	SK           string `json:"sk"`
-	ID           string `json:"id"`
-	UserID       string `json:"userId"`
-	Name         string `json:"name"`
-	Quantity     string `json:"quantity"`
-	ABV          string `json:"abv"`
-	ImageURL     string `json:"imageUrl"`
-	LastModified string `json:"lastModified"`
-}
-
-// PK = "gin" SK begins_with "gin" for listing gins
-func newGinItem(in data.CreateGinInput, now time.Time) ginItem {
+// PK = "gin" SK begins_with "gin" for listing all gins in db.
+func newListGinItem(in data.CreateGinInput, now time.Time) data.GinItem {
 	beginsWithFilter := fmt.Sprintf("%s_%s", ginFilter, in.ID)
-	return ginItem{
+	return data.GinItem{
 		PK:           ginFilter,
 		SK:           beginsWithFilter,
 		ID:           in.ID,
@@ -37,11 +26,12 @@ func newGinItem(in data.CreateGinInput, now time.Time) ginItem {
 	}
 }
 
-// PK = "gin name" SK = "user-id" for getting specific gins
-func newNamedGinItem(in data.CreateGinInput, now time.Time) ginItem {
-	return ginItem{
+// PK = "gin name" SK = "user-id" for getting specific gins.
+func newNamedGinItem(in data.CreateGinInput, now time.Time) data.GinItem {
+	beginsWithFilter := fmt.Sprintf("%s_%s", userFilter, in.UserID)
+	return data.GinItem{
 		PK:           in.Name,
-		SK:           in.UserID,
+		SK:           beginsWithFilter,
 		ID:           in.ID,
 		UserID:       in.UserID,
 		Name:         in.Name,
