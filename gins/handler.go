@@ -56,9 +56,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // Post handles POST requests to the /gins route.
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 	logger.Entry(pkg, "List").Info("upserting gin")
-	c, ok := h.ClaimsGetter(r.Context())
-	if !ok {
-		logger.Entry(pkg, "Post").Error("unable to parse claims")
+	c, ok, err := h.ClaimsGetter(r.Context())
+	if err != nil || !ok {
+		logger.Entry(pkg, "Post").WithField("ok", ok).WithError(err).Error("unable to parse claims")
 		h.rnd.JSON(w, http.StatusInternalServerError, "unable to parse claims")
 		return
 	}

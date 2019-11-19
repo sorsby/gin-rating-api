@@ -11,7 +11,7 @@ import (
 const pkg = "github.com/sorsby/gin-rating-api/claims"
 
 // Getter gets the claims from the context.
-type Getter func(ctx context.Context) (claims Claims, ok bool)
+type Getter func(ctx context.Context) (claims Claims, ok bool, err error)
 
 // Claims is the authorizer claims from the API gateway proxy request
 type Claims struct {

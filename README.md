@@ -11,5 +11,6 @@ Serverless API built with AWS Lambda, API Gateway and Cognito for authorization.
   - Support users rating gins.
   - Support aggregating gin ratings for users.
   - Store datestamp against reviews as to support 'gin of the week' and such.
-- Add package(s) for DB interactions with DynamoDB.
-- Investigate/create package to easily make JSON responses for endpoints.
+- Add package(s) for DB interactions with DynamoDB. ✅
+- Investigate/create package to easily make JSON responses for endpointd `render`. ✅
+- Parse claims from API Gateway proxy request context.

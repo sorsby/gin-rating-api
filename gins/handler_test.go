@@ -27,8 +27,8 @@ func TestList(t *testing.T) {
 		{
 			desc: "gin lister fails",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{}, errors.New("failure")
@@ -39,8 +39,8 @@ func TestList(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodGet, "/gins", strings.NewReader("{ whatever: 'trevor' }")),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			ginLister: func() (data.ListGinOutput, error) {
 				return data.ListGinOutput{
@@ -98,8 +98,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "invalid json request body",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(`{{...}`)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"invalid character '{' looking for beginning of object key string"` + "\n",
@@ -107,8 +107,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "invalid post request body content",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(invalidBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"name must not be an empty string"` + "\n",
@@ -116,8 +116,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "gin creator fails",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return errors.New("failure")
@@ -128,8 +128,8 @@ func TestPost(t *testing.T) {
 		{
 			desc: "success",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
-			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool) {
-				return claims, true
+			claimsGetter: func(ctx context.Context) (claims claims.Claims, ok bool, err error) {
+				return claims, true, nil
 			},
 			ginCreator: func(in data.CreateGinInput) error {
 				return nil
