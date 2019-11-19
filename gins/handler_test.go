@@ -63,7 +63,7 @@ func TestList(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.auth, tC.ginLister, nil)
+			h := NewHandler(tC.auth, tC.ginLister, nil, nil)
 			router.Path("/gins").Methods(http.MethodGet).HandlerFunc(h.List)
 
 			w := httptest.NewRecorder()
@@ -91,6 +91,7 @@ func TestPost(t *testing.T) {
 		desc       string
 		req        *http.Request
 		auth       claims.Authorizer
+		ginGetter  data.GinGetter
 		ginCreator data.GinCreater
 		expStatus  int
 		expBody    string
@@ -114,13 +115,28 @@ func TestPost(t *testing.T) {
 			expBody:   `"name must not be an empty string"` + "\n",
 		},
 		{
+			desc: "gin already exists",
+			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
+			auth: func(r *http.Request) (claims.Claims, bool, error) {
+				return claims.Claims{}, true, nil
+			},
+			ginGetter: func(name string) (gi data.GinItem, found bool, err error) {
+				return data.GinItem{}, true, nil
+			},
+			expStatus: http.StatusConflict,
+			expBody:   `"gin by that name already exists"` + "\n",
+		},
+		{
 			desc: "gin creator fails",
 			req:  httptest.NewRequest(http.MethodPost, "/gins", strings.NewReader(validBody)),
 			auth: func(r *http.Request) (claims.Claims, bool, error) {
 				return claims.Claims{}, true, nil
 			},
-			ginCreator: func(in data.CreateGinInput) (bool, error) {
-				return false, errors.New("failure")
+			ginGetter: func(name string) (gi data.GinItem, found bool, err error) {
+				return data.GinItem{}, false, nil
+			},
+			ginCreator: func(in data.CreateGinInput) error {
+				return errors.New("failure")
 			},
 			expStatus: http.StatusInternalServerError,
 			expBody:   `"failure"` + "\n",
@@ -131,10 +147,13 @@ func TestPost(t *testing.T) {
 			auth: func(r *http.Request) (claims.Claims, bool, error) {
 				return claims.Claims{}, true, nil
 			},
-			ginCreator: func(in data.CreateGinInput) (bool, error) {
-				return true, nil
+			ginGetter: func(name string) (gi data.GinItem, found bool, err error) {
+				return data.GinItem{}, false, nil
 			},
-			expStatus: http.StatusOK,
+			ginCreator: func(in data.CreateGinInput) error {
+				return nil
+			},
+			expStatus: http.StatusCreated,
 			expBody:   `"{\"ok\":true}"` + "\n",
 		},
 	}
@@ -142,7 +161,7 @@ func TestPost(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			router := mux.NewRouter()
 
-			h := NewHandler(tC.auth, nil, tC.ginCreator)
+			h := NewHandler(tC.auth, nil, tC.ginGetter, tC.ginCreator)
 			router.Path("/gins").Methods(http.MethodPost).HandlerFunc(h.Post)
 
 			w := httptest.NewRecorder()

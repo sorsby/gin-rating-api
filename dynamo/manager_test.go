@@ -25,12 +25,9 @@ func TestDynamoListGins(t *testing.T) {
 			Quantity: "333ml",
 			ABV:      "43",
 		}
-		ok, err := mgr.CreateGin(gin)
+		err := mgr.CreateGin(gin)
 		if err != nil {
 			t.Errorf("failed to create gin: %v", err)
-		}
-		if !ok {
-			t.Error("expected to be ok")
 		}
 	}
 	out, err := mgr.ListGins()
@@ -53,6 +50,7 @@ func TestDynamoCreateGin(t *testing.T) {
 	mgr.db = client
 	mgr.now = func() time.Time { return time.Date(2019, time.January, 4, 1, 1, 1, 1, time.UTC) }
 
+	// Create a gin and make sure it is retrievalable by listing.
 	gin := data.CreateGinInput{
 		ID:       "id",
 		UserID:   "user-id",
@@ -60,12 +58,9 @@ func TestDynamoCreateGin(t *testing.T) {
 		Quantity: "333ml",
 		ABV:      "43",
 	}
-	ok, err := mgr.CreateGin(gin)
+	err = mgr.CreateGin(gin)
 	if err != nil {
 		t.Errorf("failed to create gin: %v", err)
-	}
-	if !ok {
-		t.Error("expected to be ok")
 	}
 	out, err := mgr.ListGins()
 	if err != nil {
@@ -78,6 +73,7 @@ func TestDynamoCreateGin(t *testing.T) {
 		t.Errorf("expected gin name %s but got %s", "new-gin", out.GinItems[0].Name)
 	}
 
+	// Get the individual gin by name.
 	ggo, found, err := mgr.GetGin("new-gin")
 	if err != nil {
 		t.Errorf("expected no error but got %v", err)
@@ -113,12 +109,9 @@ func TestDynamoGetGin(t *testing.T) {
 		Quantity: "333ml",
 		ABV:      "43",
 	}
-	ok, err := mgr.CreateGin(cgin)
+	err = mgr.CreateGin(cgin)
 	if err != nil {
 		t.Errorf("failed to create gin: %v", err)
-	}
-	if !ok {
-		t.Error("expected to be ok")
 	}
 	gin, found, err := mgr.GetGin("new-gin")
 	if err != nil {

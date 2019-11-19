@@ -19,17 +19,19 @@ type Handler struct {
 	rnd        *render.Render
 	Authorizer claims.Authorizer
 	GinLister  data.GinLister
+	GinGetter  data.GinGetter
 	GinCreator data.GinCreater
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(a claims.Authorizer, gl data.GinLister, gc data.GinCreater) *Handler {
+func NewHandler(a claims.Authorizer, gl data.GinLister, gg data.GinGetter, gc data.GinCreater) *Handler {
 	return &Handler{
 		rnd: render.New(render.Options{
 			StreamingJSON: true,
 		}),
 		Authorizer: a,
 		GinLister:  gl,
+		GinGetter:  gg,
 		GinCreator: gc,
 	}
 }
@@ -55,7 +57,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 // Post handles POST requests to the /gins route.
 func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
-	logger.Entry(pkg, "List").Info("upserting gin")
+	logger.Entry(pkg, "List").Info("creating gin")
 	claims, ok, err := h.Authorizer(r)
 	if err != nil {
 		logger.Entry(pkg, "Post").WithError(err).Error("authorizer failed")
@@ -92,7 +94,19 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		WithField("requestBody", gr).
 		Info("successfully parsed post request body")
 
-	ok, err = h.GinCreator(data.CreateGinInput{
+	_, found, err := h.GinGetter(gr.Name)
+	if err != nil {
+		logger.Entry(pkg, "Post").WithError(err).Error("failed to lookup gin by name")
+		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if found {
+		logger.Entry(pkg, "Post").Warn("gin by that name already exists")
+		h.rnd.JSON(w, http.StatusConflict, "gin by that name already exists")
+		return
+	}
+
+	err = h.GinCreator(data.CreateGinInput{
 		ID:       uuid.New().String(),
 		UserID:   claims.UserID,
 		Name:     gr.Name,
@@ -104,12 +118,7 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		h.rnd.JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if !ok {
-		logger.Entry(pkg, "Post").Info("gin already exists")
-		h.rnd.JSON(w, http.StatusConflict, []byte("gin already exists"))
-		return
-	}
 
-	h.rnd.JSON(w, http.StatusOK, `{"ok":true}`)
-	logger.Entry(pkg, "List").Info("successfully upserted gin")
+	h.rnd.JSON(w, http.StatusCreated, `{"ok":true}`)
+	logger.Entry(pkg, "List").Info("successfully created gin")
 }

@@ -29,23 +29,14 @@ func NewManager(tableName string) *Manager {
 	}
 }
 
-// CreateGin creates the necessary items in the DB for a new gin entry.
-func (mgr *Manager) CreateGin(in data.CreateGinInput) (bool, error) {
+// CreateGin attempts to create a unique gin and insert to dynamo, returns false if gin already exists.
+func (mgr *Manager) CreateGin(in data.CreateGinInput) error {
 	var writeItems []*dynamodb.TransactWriteItem
-
-	// Return !ok if gin already exists in the db.
-	_, found, err := mgr.GetGin(in.Name)
-	if err != nil {
-		return false, fmt.Errorf("dynamo.CreateGin: error getting gin: %w", err)
-	}
-	if found {
-		return false, nil
-	}
 
 	ngi := newListGinItem(in, mgr.now())
 	ginJSON, err := dynamodbattribute.MarshalMap(ngi)
 	if err != nil {
-		return false, fmt.Errorf("dynamo.CreateGin: error marshalling gin item: %w", err)
+		return fmt.Errorf("dynamo.CreateGin: error marshalling gin item: %w", err)
 	}
 	gp := dynamodb.Put{
 		TableName: aws.String(mgr.tableName),
@@ -56,7 +47,7 @@ func (mgr *Manager) CreateGin(in data.CreateGinInput) (bool, error) {
 	nngi := newNamedGinItem(in, mgr.now())
 	namedGinJSON, err := dynamodbattribute.MarshalMap(nngi)
 	if err != nil {
-		return false, fmt.Errorf("dynamo.CreateGin: error marshalling named gin item: %w", err)
+		return fmt.Errorf("dynamo.CreateGin: error marshalling named gin item: %w", err)
 	}
 	ngp := dynamodb.Put{
 		TableName: aws.String(mgr.tableName),
@@ -66,7 +57,7 @@ func (mgr *Manager) CreateGin(in data.CreateGinInput) (bool, error) {
 	_, err = mgr.db.TransactWriteItems(&dynamodb.TransactWriteItemsInput{
 		TransactItems: writeItems,
 	})
-	return true, err
+	return err
 }
 
 // ListGins lists all the gins in the database.

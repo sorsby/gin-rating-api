@@ -3,23 +3,13 @@ package data
 import "time"
 
 // GinCreater creates a new gin the database.
-type GinCreater func(in CreateGinInput) (bool, error)
+type GinCreater func(in CreateGinInput) error
 
 // GinLister lists the gins in the database.
 type GinLister func() (ListGinOutput, error)
 
 // GinGetter gets a gin by name, or returns found false if it doesn't exist.
-type GinGetter func(name string) (GinItem, found bool, err error)
-
-// CreateGinInput defines the input data required to create a new gin.
-type CreateGinInput struct {
-	ID           string
-	UserID       string
-	Name         string
-	Quantity     string
-	ABV          string
-	LastModified time.Time
-}
+type GinGetter func(name string) (gi GinItem, found bool, err error)
 
 // GinItem is a row in the dynamodb table representing a gin.
 type GinItem struct {
@@ -32,6 +22,16 @@ type GinItem struct {
 	ABV          string `json:"abv"`
 	ImageURL     string `json:"imageUrl"`
 	LastModified string `json:"lastModified"`
+}
+
+// CreateGinInput defines the input data required to create a new gin.
+type CreateGinInput struct {
+	ID           string
+	UserID       string
+	Name         string
+	Quantity     string
+	ABV          string
+	LastModified time.Time
 }
 
 // ListGinOutput is the output from listing the gins in the db.
